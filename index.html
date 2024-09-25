@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Load GLB Model with Three.js</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.rawgit.com/mrdoob/three.js/r128/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.rawgit.com/mrdoob/three.js/r128/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff); // 设置场景背景为白色
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        // 环境光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1); // 提高环境光强度
+        scene.add(ambientLight);
+
+        // 添加四个方向的平行光
+        const directionalLights = [];
+
+        // 光源1：左前上方
+        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight1.position.set(-1, 1, 1).normalize();
+        scene.add(dirLight1);
+        directionalLights.push(dirLight1);
+
+        // 光源2：右前下方
+        const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight2.position.set(1, -1, 1).normalize();
+        scene.add(dirLight2);
+        directionalLights.push(dirLight2);
+
+        // 光源3：左后上方
+        const dirLight3 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight3.position.set(-1, 1, -1).normalize();
+        scene.add(dirLight3);
+        directionalLights.push(dirLight3);
+
+        // 光源4：右后下方
+        const dirLight4 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight4.position.set(1, -1, -1).normalize();
+        scene.add(dirLight4);
+        directionalLights.push(dirLight4);
+
+        const loader = new THREE.GLTFLoader();
+        loader.load('./V1.0.glb', (gltf) => {
+            scene.add(gltf.scene);
+            
+        });
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+
+</html>
