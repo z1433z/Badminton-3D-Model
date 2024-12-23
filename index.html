@@ -20,65 +20,183 @@
 </head>
 
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
+        // 初始化Three.js场景
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff); // 设置场景背景为白色
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        // 添加坐标轴辅助器
+        const axesHelper = new THREE.AxesHelper(100);  // 增加到100单位长度
+        scene.add(axesHelper);
 
-        // 环境光
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 提高环境光强度
+        // 添加网格辅助器
+        const size = 100;  // 增加网格大小到100
+        const divisions = 100;  // 增加网格细分数以保持精度
+        const gridHelper = new THREE.GridHelper(size, divisions);
+        scene.add(gridHelper);
+
+        // 添加坐标文本
+        const createAxisLabel = (text, position) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 64;
+            canvas.height = 32;
+            
+            context.fillStyle = '#000000';
+            context.font = '24px Arial';
+            context.fillText(text, 4, 24);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(position);
+            sprite.scale.set(0.2, 0.1, 1);
+            return sprite;
+        };
+
+        // 创建坐标轴刻度标签
+        const createNumberLabel = (number, position) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 64;
+            canvas.height = 32;
+            
+            context.fillStyle = '#000000';
+            context.font = '20px Arial';  // 稍微减小字体大小
+            context.textAlign = 'center';
+            context.fillText(number.toString(), 32, 24);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(position);
+            sprite.scale.set(0.4, 0.2, 1);  // 稍微减小标签大小
+            return sprite;
+        };
+
+        // 创建 X、Y、Z 轴的标签
+        const xLabel = createAxisLabel('X', new THREE.Vector3(105, 0, 0));
+        const yLabel = createAxisLabel('Y', new THREE.Vector3(0, 105, 0));
+        const zLabel = createAxisLabel('Z', new THREE.Vector3(0, 0, 105));
+
+        scene.add(xLabel);
+        scene.add(yLabel);
+        scene.add(zLabel);
+
+        // 添加刻度值（每5个单位添加一个数字）
+        for (let i = 5; i <= 100; i += 5) {
+            // X轴正方向刻度
+            scene.add(createNumberLabel(i, new THREE.Vector3(i, -2.5, 0)));
+            // X轴负方向刻度
+            scene.add(createNumberLabel(-i, new THREE.Vector3(-i, -2.5, 0)));
+            
+            // Y轴刻度
+            scene.add(createNumberLabel(i, new THREE.Vector3(-2.5, i, 0)));
+            
+            // Z轴正方向刻度
+            scene.add(createNumberLabel(i, new THREE.Vector3(0, -2.5, i)));
+            // Z轴负方向刻度
+            scene.add(createNumberLabel(-i, new THREE.Vector3(0, -2.5, -i)));
+        }
+
+        // 降低环境光强度
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);  // 从3降到1.5
         scene.add(ambientLight);
 
-        // 添加四个方向的平行光
-        const directionalLights = [];
+        // 定义所有点光源的位置和参数
+        const lightPositions = [
+            // { pos: [-10, 10, -16], color: 0xff0000, light: 0, distance: 100 },  // 红色
+            // { pos: [-20, 10, -16], color: 0x00ff00, light: 0, distance: 100 },  // 绿色
+            // { pos: [-30, 10, -16], color: 0x0000ff, light: 0, distance: 100 },  // 蓝色
+            // { pos: [-40, 10, -16], color: 0xffff00, light: 0, distance: 100 },  // 黄色
+            // { pos: [-50, 10, -16], color: 0xff00ff, light: 0, distance: 100 },  // 紫色
+            // { pos: [-60, 10, -16], color: 0x00ffff, light: 0, distance: 100 },  // 青色
+            { pos: [-30, 10, 10], color: 0xffa500, light: 6, distance: 100 },   // 橙色
+            { pos: [50, 10, -13], color: 0x800080, light: 0.6, distance: 100 },   // 深紫色
+            { pos: [-30, 10, -70], color: 0x008000, light: 0.6, distance: 100 }   // 深绿色
+        ];
 
-        // 光源1：左前上方
-        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight1.position.set(-1, 1, 1).normalize();
-        scene.add(dirLight1);
-        directionalLights.push(dirLight1);
-
-        // 光源2：右前下方
-        const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight2.position.set(1, -1, 1).normalize();
-        scene.add(dirLight2);
-        directionalLights.push(dirLight2);
-
-        // 光源3：左后上方
-        const dirLight3 = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight3.position.set(-1, 1, -1).normalize();
-        scene.add(dirLight3);
-        directionalLights.push(dirLight3);
-
-        // 光源4：右后下方
-        const dirLight4 = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight4.position.set(1, -1, -1).normalize();
-        scene.add(dirLight4);
-        directionalLights.push(dirLight4);
-
-        const loader = new THREE.GLTFLoader();
-        loader.load('https://cdn.jsdelivr.net/gh/z1433z/Badminton-3D-Model/V1.0.glb', (gltf) => {
-            scene.add(gltf.scene);
+        // 创建并存储所有点光源
+        const wallLights = lightPositions.map(pos => {
+            const light = new THREE.PointLight(0xffffff, 0.5, pos.distance);  // 调整每个光源的强度和范围
+            light.position.set(...pos.pos);
+            scene.add(light);
             
+            // 创建光源位置指示器
+            const sphereGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+            const sphereMaterial = new THREE.MeshBasicMaterial({ color: pos.color });
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.position.copy(light.position);
+            scene.add(sphere);
+            
+            return light;
         });
 
-        camera.position.z = 5;
+        // 调整半球光参数
+        const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xe6e6e6, 0.2);  // 强度从0.5降到0.2
+        scene.add(hemisphereLight);
 
+        // 创建一个轨道控制器
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // 设置相机的位置
+        camera.position.set(0, 0, 5);  // 设置相机位置到更远的观察点
+        camera.lookAt(0, 0, 0);
+
+        // 加载3D模型
+        const loader = new THREE.GLTFLoader();
+        loader.load('https://cdn.jsdelivr.net/gh/z1433z/Badminton-3D-Model/V1.0.glb', function (gltf) {
+            // 遍历模型中的所有网格
+            gltf.scene.traverse((node) => {
+                if (node.isMesh) {
+                    const material = new THREE.MeshLambertMaterial({
+                        color: node.material.color || 0xffffff,
+                        map: node.material.map,
+                        emissive: 0x000000,
+                        emissiveIntensity: 0,
+                        opacity: 0.5,               // 不透明度
+                        transparent: false,         // 不透明
+                        side: THREE.DoubleSide     // 双面渲染
+                    });
+                    
+                    // 如果原材质有颜色，保持原有颜色但降低亮度
+                    if (node.material.color) {
+                        const color = node.material.color.clone();
+                        // color.multiplyScalar(1);  // 将颜色亮度降低到原来的80%
+                        material.color = color;
+                    }
+                    
+                    node.material = material;
+                }
+            });
+            
+            scene.add(gltf.scene);
+            animate();
+        }, undefined, function (error) {
+            console.error(error);
+        });
+
+        // 动画循环
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
             renderer.render(scene, camera);
         }
-        animate();
+
+        // 处理窗口大小调整
+        window.addEventListener('resize', function () {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 
